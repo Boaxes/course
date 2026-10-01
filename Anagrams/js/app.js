@@ -3,6 +3,7 @@
   'use strict';
 
   var C = window.GPCore;
+  var Sound = window.GPAudio;
   var dict = C.Dictionary.fromString(window.GP_WORDS);
 
   var MODES = {
@@ -19,7 +20,7 @@
     enter: $('enterBtn'), shuffle: $('shuffleBtn'), feedback: $('feedback'), hint: $('keysHint'),
     words: $('wordsCount'), score: $('score'), boardId: $('boardId'), copy: $('copyLink'),
     found: $('foundCount'), total: $('totalCount'), byLength: $('byLength'), list: $('wordList'),
-    complete: $('complete'), newBtn: $('newBtn'), reveal: $('revealBtn')
+    complete: $('complete'), newBtn: $('newBtn'), reveal: $('revealBtn'), mute: $('muteBtn')
   };
 
   // ------------------------------------------------------------ storage ---
@@ -30,6 +31,7 @@
   })();
   store.games = store.games || {};
   store.current = store.current || {};
+  Sound.setMuted(!!store.muted);
   function persist() {
     var keys = Object.keys(store.games);
     if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(function (k) { delete store.games[k]; });
@@ -95,22 +97,32 @@
     return '';
   }
 
+  // Record a new valid word and play its sound. `shown` is the word still
+  // on screen (Anagrams keeps the letters in place), or '' if input cleared.
+  function credit(word, shown) {
+    game.found.push(word);
+    lastFound = word;
+    saveGame();
+    Sound.play(game.found.length === game.solutions.size ? 'complete' : 'good', word.length);
+    flashMsg(word.toUpperCase() + ' (+' + points(word) + ')', 'good', shown);
+  }
+
+  // Word Hunt: Enter or releasing a drag submits the word.
   function submit(silentIfShort) {
     var word = currentWord();
     if (!word) return;
     clearInput();
     var W = word.toUpperCase();
     if (word.length < 3) {
-      if (!silentIfShort) flashMsg('Too short', 'bad');
+      if (!silentIfShort) { flashMsg('Too short', 'bad'); Sound.play('bad'); }
     } else if (game.found.indexOf(word) >= 0) {
       flashMsg(W + ' — already found', 'dup');
+      Sound.play('dup');
     } else if (game.solutions.has(word)) {
-      game.found.push(word);
-      lastFound = word;
-      saveGame();
-      flashMsg(W + ' (+' + points(word) + ')', 'good');
+      credit(word, '');
     } else {
       flashMsg(W + ' — not in word list', 'bad');
+      Sound.play('bad');
     }
     renderAll();
   }
@@ -121,9 +133,27 @@
 
   function setInput(next) {
     if (next === input) return; // ignored keystroke
+    var before = currentWord().length;
     input = next;
     preview = null;
     flash = null;
+    var word = currentWord();
+    // Anagrams: a new valid word counts as soon as it's spelled. The letters
+    // stay so you can keep building a longer word.
+    if (game.cfg.kind === 'an' && liveClass(word) === 'good') {
+      credit(word, word);
+      renderAll();
+      return;
+    }
+    if (word.length > before) Sound.play('tile', word.length - 1);
+    else if (word.length < before) Sound.play('back');
+    renderInput();
+  }
+
+  function clearAndRender() {
+    if (currentWord()) Sound.play('back');
+    clearInput();
+    preview = null;
     renderInput();
   }
 
@@ -131,6 +161,7 @@
     if (game.cfg.kind !== 'an') return;
     var letters = C.shuffle(input.letters.slice(), Math.random);
     input = C.anagramInput(letters);
+    Sound.play('shuffle');
     renderInput();
   }
 
@@ -158,10 +189,10 @@
   }
 
   // ---------------------------------------------------------- feedback ---
-  function flashMsg(text, cls) {
-    flash = { text: text, cls: cls };
+  function flashMsg(text, cls, shown) {
+    flash = { text: text, cls: cls, word: shown || '' };
     clearTimeout(flashTimer);
-    flashTimer = setTimeout(function () { flash = null; renderFeedback(); }, 1400);
+    flashTimer = setTimeout(function () { flash = null; renderInput(); }, 1400);
     renderFeedback();
   }
 
@@ -170,13 +201,13 @@
   function renderFeedback() {
     var word = currentWord();
     var text, cls;
-    if (word) {
+    if (flash && flash.word === word) {
+      text = flash.text;
+      cls = flash.cls;
+    } else if (word) {
       cls = liveClass(word);
       text = word.toUpperCase() + (cls === 'good' ? ' (+' + points(word) + ')' : '');
       cls = cls || 'live';
-    } else if (flash) {
-      text = flash.text;
-      cls = flash.cls;
     } else {
       els.feedback.innerHTML = '';
       return;
@@ -212,8 +243,8 @@
         '<kbd>Backspace</kbd> undo · <kbd>Esc</kbd> clear · drag with mouse/touch works too';
     } else {
       els.hint.innerHTML =
-        'Type letters · <kbd>Enter</kbd> submit · <kbd>Backspace</kbd> undo · ' +
-        '<kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle · tap tiles works too';
+        'Type letters · words count as soon as you spell them · <kbd>Backspace</kbd> undo · ' +
+        '<kbd>Enter</kbd>/<kbd>Esc</kbd> clear · <kbd>Space</kbd> shuffle · tap tiles works too';
     }
   }
 
@@ -225,6 +256,8 @@
   function renderInput() {
     var word = currentWord();
     var lc = liveClass(word);
+    // Keep a just-scored word green while its result is showing.
+    if (flash && flash.word && flash.word === word && flash.cls === 'good') lc = 'good';
     if (game.cfg.kind === 'wh') renderGrid(lc);
     else renderAnagram(lc);
     renderFeedback();
@@ -279,7 +312,7 @@
       var used = input.slots.indexOf(idx) >= 0;
       return '<div class="tile' + (used ? ' used' : '') + '" data-rack="' + idx + '">' + ch + '</div>';
     }).join('');
-    els.enter.classList.toggle('ready', input.slots.length >= 3);
+    els.enter.classList.toggle('ready', input.slots.length > 0);
   }
 
   function renderProgress() {
@@ -352,11 +385,10 @@
       e.preventDefault();
       setInput(game.cfg.kind === 'an' ? C.anagramBackspace(input) : C.gridBackspace(input));
     } else if (k === 'Enter') {
-      submit(false);
+      if (game.cfg.kind === 'an') clearAndRender();
+      else submit(false);
     } else if (k === 'Escape') {
-      clearInput();
-      preview = null;
-      renderInput();
+      clearAndRender();
     } else if (k === ' ') {
       shuffleRack();
     } else if (k === '=') {
@@ -421,7 +453,22 @@
     var t = e.target.closest('[data-slot]');
     if (t) setInput(C.anagramTruncate(input, +t.dataset.slot));
   });
-  els.enter.addEventListener('click', function () { submit(false); });
+  els.enter.addEventListener('click', clearAndRender);
+  function renderMute() {
+    var m = Sound.isMuted();
+    els.mute.setAttribute('aria-pressed', String(m));
+    els.mute.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off');
+    els.mute.title = m ? 'Sound off' : 'Sound on';
+    els.mute.classList.toggle('muted', m);
+  }
+  els.mute.addEventListener('click', function () {
+    Sound.setMuted(!Sound.isMuted());
+    store.muted = Sound.isMuted();
+    persist();
+    renderMute();
+    Sound.play('tile', 2);
+  });
+  renderMute();
   els.shuffle.addEventListener('click', shuffleRack);
 
   // ------------------------------------------------------ panel / misc ---

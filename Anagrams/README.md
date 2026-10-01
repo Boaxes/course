@@ -30,9 +30,10 @@ Both modes are keyboard-first. Mouse and touch also work.
 | Key | Anagrams | Word Hunt |
 |---|---|---|
 | letter | place the next unused tile with that letter (ignored if none is left) | extend the path (see below) |
-| <kbd>Enter</kbd> | submit | submit |
+| <kbd>Enter</kbd> | clear (words score automatically) | submit |
 | <kbd>Backspace</kbd> | remove the last letter | remove the last letter |
 | <kbd>Esc</kbd> | clear | clear |
+| 🔊 button | sound on/off (remembered) | sound on/off |
 | <kbd>Space</kbd> | shuffle the rack | — |
 | <kbd>Shift</kbd>+letter | — | always add the letter (for doubled letters) |
 | <kbd>1</kbd>–<kbd>4</kbd> | switch mode | switch mode |
@@ -53,6 +54,17 @@ Both modes are keyboard-first. Mouse and touch also work.
 - If your next letter doesn't connect to the highlighted path but connects
   from another path that spells the same letters, the highlight moves to
   that path instead of ignoring your input.
+
+**Anagrams scoring:** a word counts the moment you spell it, with no Enter
+needed. The letters stay in place so you can keep extending: typing
+`A-R-C-H-I-N-E` scores ARC, ARCH and ARCHINE as you go. Press Enter or Esc
+(or the CLEAR button) to start a new word. This differs from GamePigeon,
+where you press ENTER.
+
+**Sound:** short synthesized effects (no audio files). Notes rise as you add
+letters, there's a chime for a new word (longer for longer words), a double
+blip for a repeat, a buzz for a word that isn't in the list, and a fanfare
+when you complete a board. Use the speaker button to mute.
 
 While you type, the word turns green if it's a new valid word and yellow if
 you've already found it, as in GamePigeon. In Word Hunt, hovering over a word
@@ -122,6 +134,7 @@ python3 tools/build_words.py   # writes js/words.js
 index.html, style.css   page
 js/core.js              pure game logic (generators, solvers, scoring, keyboard state machines)
 js/app.js               UI
+js/audio.js             synthesized sound effects (Web Audio)
 js/words.js             generated word list (do not edit)
 data/csw12.txt          source word list (CSW12)
 tools/build_words.py    builds js/words.js from data/

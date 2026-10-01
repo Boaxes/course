@@ -26,6 +26,9 @@
         <div class="board-id">Board <code id="boardId"></code>
           <button type="button" id="copyLink" class="link-btn">copy link</button>
         </div>
+        <button type="button" id="muteBtn" class="round-btn sound-btn" aria-pressed="false" aria-label="Turn sound off">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path class="waves" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/><path class="cross" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg>
+        </button>
       </div>
 
       <div class="scorecard">
@@ -45,7 +48,7 @@
       </div>
 
       <div id="anWrap" class="an-wrap">
-        <button type="button" id="enterBtn" class="enter-btn">ENTER</button>
+        <button type="button" id="enterBtn" class="enter-btn" title="Clear (Enter or Esc)">CLEAR</button>
         <div id="slots" class="slots"></div>
         <div id="rack" class="rack"></div>
       </div>
@@ -88,6 +91,7 @@
 
   <script src="js/words.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

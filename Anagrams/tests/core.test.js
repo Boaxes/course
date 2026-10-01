@@ -17,9 +17,16 @@ function typeAll(st, s) {
 }
 
 test('word list loads with expected size', () => {
-  assert.equal(dict.words.length, 197762);
+  assert.equal(dict.words.length, 270039); // CSW12, 3+ letters
   assert.ok(dict.has('raft'));
-  assert.ok(!dict.has('qi')); // not in this list, unlike Collins/TWL
+  assert.ok(!dict.has('qi')); // 2-letter words are excluded
+});
+
+// "Possible words" counts observed in GamePigeon Anagrams. CSW12 is the only
+// edition checked that reproduces both exactly.
+test('anagram counts match GamePigeon data points', () => {
+  assert.equal(C.solveAnagram(dict, 'rdiept'.split(''), 6).length, 61);
+  assert.equal(C.solveAnagram(dict, 'iciemla'.split(''), 7).length, 69);
 });
 
 test('scoring tables', () => {
@@ -46,11 +53,7 @@ test('anagram rack is a shuffled dictionary word and is reproducible', () => {
 
 test('anagram solver on the LEGINGR screenshot rack', () => {
   const sol = C.solveAnagram(dict, 'legingr'.split(''), 7);
-  for (const w of ['linger', 'niggle', 'reign', 'liner']) assert.ok(sol.includes(w), w);
-  // Quirk of this word list: words that are also names are missing,
-  // e.g. 'ginger' and 'girl' (while 'gingers' and 'girls' are present).
-  assert.ok(!sol.includes('ginger'));
-  assert.ok(!sol.includes('girl'));
+  for (const w of ['linger', 'ginger', 'niggle', 'reign', 'girl']) assert.ok(sol.includes(w), w);
   assert.ok(!sol.includes('legging')); // needs three Gs
 });
 

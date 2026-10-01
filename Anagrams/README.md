@@ -65,7 +65,8 @@ guessed:
 
 | Rule | Trainer | Status |
 |---|---|---|
-| Word list | [k-gerner/Game-Pigeon-Solvers](https://github.com/k-gerner/Game-Pigeon-Solvers): `anagrams/letters7.txt` for Anagrams, `wordhunt/letters10.txt` for Word Hunt. The two lists match for words of 7 letters or fewer. | **Assumed** (your choice). The real dictionary is unpublished. |
+| Word list (Anagrams) | Collins Scrabble Words 2012 (CSW12), 3+ letters | **Strong evidence**: matches GamePigeon's possible-word counts exactly on RDIEPT (61) and ICIEMLA (69). See below. |
+| Word list (Word Hunt) | Same CSW12 list (longest word is 15 letters) | **Assumed** to be the same dictionary; not checked against Word Hunt yet |
 | Minimum word length | 3 | Matches |
 | Word Hunt paths | Any of the 8 neighbors; no tile reused within a word | Matches |
 | Anagrams points | 3 → 100, 4 → 400, 5 → 1200, 6 → 2000, 7 → 3000 | Community-reported; 7 letters is the least certain |
@@ -75,29 +76,45 @@ guessed:
 | Timer | None | Differs on purpose (GamePigeon: 60 s Anagrams, 80 s Word Hunt) |
 | Donut / Cross Word Hunt boards, opponents | Not included | Differs |
 
-### Known quirks of the word list
+### Why CSW12
 
-- **Words that are also names are missing.** Examples include *girl, love,
-  rain, king, rose, hope, angle, amber, alpha, ginger*, while plurals such as
-  *girls* and *gingers* are present. GamePigeon almost certainly accepts many
-  of these, so the trainer will reject words the real game takes. It also
-  won't require them to complete a board.
-- It contains many obscure Collins-style words (*aal, abac, abcee…*), and
-  completing a board requires them.
-- It includes offensive words, the same as the source list.
-- Word Hunt words longer than 10 letters aren't in the list and can't score.
+GamePigeon doesn't publish its dictionary. To find it, we compared each
+candidate list's word count (3+ letters) with the counts GamePigeon reports
+for two racks:
+
+| List | RDIEPT (GamePigeon: 61) | ICIEMLA (GamePigeon: 69) |
+|---|---|---|
+| **CSW12** (Collins 2012) | **61** | **69** |
+| CSW07 / SOWPODS | 60 | 68 |
+| CSW15 | 62 | 71 |
+| CSW19 / CSW21 | 63 | 71 |
+| NWL2020 / NWL2023 / TWL2014 | 50–51 | 61 |
+| TWL06 | 49 | 59 |
+| ENABLE | 49 | 56 |
+| k-gerner `letters7.txt` (previously used) | 55 | 55 |
+
+Only CSW12 matches both. The k-gerner list turned out to be a later Collins
+edition with every word that's also a name removed (*girl, love, male, lace,
+ginger*…). The tests in `tests/core.test.js` check both counts. More data
+points (especially Word Hunt totals) would make this more certain.
+
+Things that are still unknown: whether GamePigeon filters offensive words
+(CSW12 contains them, and these two racks don't test it), and whether Word
+Hunt uses the same list.
+
+**Licensing:** CSW12 is © HarperCollins. It's included here for personal
+use. Keep this repository private, and don't publish `data/csw12.txt` or
+`js/words.js`.
 
 ### Swapping the word list
 
-Replace `data/letters7.txt` and/or `data/letters10.txt`, using one lowercase
-word per line, then regenerate the embedded list:
+Put one lowercase word per line in `data/csw12.txt` (or regenerate it from a
+raw Collins file with `python3 tools/build_words.py --from-raw CSW12.txt`),
+then rebuild the embedded list:
 
 ```sh
 python3 tools/build_words.py   # writes js/words.js
 ```
-
-The script checks that `letters10.txt` agrees with `letters7.txt` for words
-of 7 letters or fewer. If you want different lists per mode, relax that check.
 
 ## Files
 
@@ -106,7 +123,7 @@ index.html, style.css   page
 js/core.js              pure game logic (generators, solvers, scoring, keyboard state machines)
 js/app.js               UI
 js/words.js             generated word list (do not edit)
-data/                   source word lists
+data/csw12.txt          source word list (CSW12)
 tools/build_words.py    builds js/words.js from data/
 tests/core.test.js      unit tests: node --test tests/core.test.js
 ```

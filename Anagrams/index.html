@@ -70,7 +70,8 @@
         <table>
           <thead><tr><th>Rule</th><th>Trainer</th><th>Status</th></tr></thead>
           <tbody>
-            <tr><td>Word list</td><td>k-gerner/Game-Pigeon-Solvers lists (<code>anagrams/letters7.txt</code>, <code>wordhunt/letters10.txt</code>), 3–10 letters.</td><td><span class="tag assumed">Assumed</span> GamePigeon has never published its dictionary. This list is missing many words that are also names (girl, love, rain, king, rose, angle, ginger…), and those will be rejected here. Words over 10 letters can't score here.</td></tr>
+            <tr><td>Word list (Anagrams)</td><td>Collins Scrabble Words 2012 (CSW12), 3+ letters</td><td><span class="tag reported">Strong evidence</span> GamePigeon doesn't publish its dictionary, but CSW12 reproduces GamePigeon's word counts exactly on two tested racks (RDIEPT → 61, ICIEMLA → 69). Every other list checked (older and newer Collins editions, TWL/NWL, ENABLE) is off.</td></tr>
+            <tr><td>Word list (Word Hunt)</td><td>Same CSW12 list (max 15 letters)</td><td><span class="tag assumed">Assumed</span> Probably the same dictionary as Anagrams, but no Word Hunt counts have been checked yet.</td></tr>
             <tr><td>Minimum length</td><td>3 letters</td><td><span class="tag match">Matches</span></td></tr>
             <tr><td>Word Hunt paths</td><td>Any of the 8 neighbors; each tile at most once per word</td><td><span class="tag match">Matches</span></td></tr>
             <tr><td>Anagrams points</td><td>3 → 100, 4 → 400, 5 → 1200, 6 → 2000, 7 → 3000</td><td><span class="tag reported">Community-reported</span> The 7-letter value is the least certain.</td></tr>

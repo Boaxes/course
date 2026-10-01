@@ -73,6 +73,7 @@
     lastFound = null;
     try { history.replaceState(null, '', '#' + mode + '-' + seed); } catch (e) { /* file:// in some browsers */ }
     flash = null;
+    disarmReveal();
     buildBoard();
     renderAll();
   }
@@ -135,10 +136,22 @@
 
   function newBoard() { startGame(game.mode); }
 
+  // Two-step confirm built into the button (embedded viewers block confirm()).
+  var revealArmed = 0;
+  function disarmReveal() {
+    clearTimeout(revealArmed);
+    revealArmed = 0;
+    els.reveal.textContent = 'Reveal';
+  }
   function reveal() {
     if (game.revealed) return;
-    var missing = game.solutions.size - game.found.length;
-    if (missing && !window.confirm('Reveal the ' + missing + ' remaining word' + (missing === 1 ? '' : 's') + '?')) return;
+    if (!revealArmed) {
+      var missing = game.solutions.size - game.found.length;
+      els.reveal.textContent = 'Reveal ' + missing + ' word' + (missing === 1 ? '' : 's') + '?';
+      revealArmed = setTimeout(disarmReveal, 3000);
+      return;
+    }
+    disarmReveal();
     game.revealed = true;
     saveGame();
     renderAll();
@@ -439,9 +452,14 @@
   els.copy.addEventListener('click', function () {
     var url = location.href.split('#')[0] + '#' + game.mode + '-' + game.seed;
     var done = function () { els.copy.textContent = 'copied'; setTimeout(function () { els.copy.textContent = 'copy link'; }, 1200); };
-    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Board link:', url); });
-    else window.prompt('Board link:', url);
+    var fallback = function () { els.copy.textContent = 'copy failed'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
   });
+  // Inside an embedded viewer the page URL isn't shareable, so hide the link.
+  var embedded = false;
+  try { embedded = window.top !== window.self; } catch (e) { embedded = true; }
+  if (embedded) els.copy.hidden = true;
   // Keep buttons from holding focus so Enter/Space always go to the game.
   document.addEventListener('mousedown', function (e) {
     if (e.target.closest('button')) e.preventDefault();
@@ -463,4 +481,7 @@
     var mode = MODES[store.mode] ? store.mode : 'an6';
     startGame(mode, store.current[mode]);
   }
+  // Take keyboard focus so typing works without clicking first.
+  try { window.focus(); } catch (e) { /* ignore */ }
+  els.game.addEventListener('pointerdown', function () { try { window.focus(); } catch (e) { /* ignore */ } });
 })();
